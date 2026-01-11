@@ -1,0 +1,41 @@
+# .dockerignore
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Data
+data/
+vector_store/
+models_cache/
+*.pdf
+*.docx
+*.txt
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.development
+.secrets/
+
+# Docker
+docker-compose.override.yml
