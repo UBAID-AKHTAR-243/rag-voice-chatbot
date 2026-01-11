@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI RAG Sidebar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        :root {
+            --primary: #6d28d9;
+            --primary-dark: #5b21b6;
+            --secondary: #10b981;
+            --secondary-dark: #0d9668;
+            --background: #0f172a;
+            --card-bg: #1e293b;
+            --sidebar-bg: #1e293b;
+            --text: #f8fafc;
+            --text-light: #cbd5e1;
+            --border: #334155;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --success: #10b981;
+            --info: #3b82f6;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            --radius: 12px;
+            --sidebar-width: 280px;
+            --sidebar-collapsed: 80px;
+        }
+        
+        body {
+            background-color: var(--sidebar-bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 100%;
+            height: 100%;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        .sidebar.collapsed {
+            padding: 30px 8px;
+        }
+        
+        .sidebar.collapsed .logo-text,
+        .sidebar.collapsed .nav-title,
+        .sidebar.collapsed .nav-text,
+        .sidebar.collapsed .config-section .card-header .card-title,
+        .sidebar.collapsed .config-section .api-input-group,
+        .sidebar.collapsed .config-section .upload-area,
+        .sidebar.collapsed .config-section .file-list,
+        .sidebar.collapsed .config-section .card p,
+        .sidebar.collapsed .config-section .info-text,
+        .sidebar.collapsed .actions-section {
+            display: none;
+        }
+        
+        .sidebar.collapsed .logo {
+            justify-content: center;
+            padding: 0;
+        }
+        
+        .sidebar.collapsed .nav-item {
+            padding: 12px;
+            justify-content: center;
+        }
+        
+        .sidebar.collapsed .config-section .card {
+            padding: 16px 8px;
+        }
+        
+        .sidebar.collapsed .config-section .card-icon {
+            margin: 0 auto;
+        }
+        
+        .sidebar.collapsed .sidebar-toggle i {
+            transform: rotate(180deg);
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            padding: 0 8px;
+            position: relative;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .logo-icon {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: all 0.3s ease;
+        }
+        
+        /* Sidebar Toggle Button */
+        .sidebar-toggle {
+            position: absolute;
+            top: 0;
+            right: -15px;
+            background-color: var(--primary);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid var(--sidebar-bg);
+            z-index: 101;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .sidebar-toggle:hover {
+            background-color: var(--primary-dark);
+            transform: scale(1.1);
+        }
+        
+        /* Configuration Section in Sidebar */
+        .config-section {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        .config-section .card {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .config-section .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .config-section .card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .config-section .api-key-card .card-icon {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+        
+        .config-section .upload-card .card-icon {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--secondary);
+        }
+        
+        .config-section .actions-card .card-icon {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--info);
+        }
+        
+        /* API Key Input */
+        .api-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .api-input-container {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .form-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+        
+        .form-input {
+            padding: 10px 14px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 14px;
+            width: 100%;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+            min-width: fit-content;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--secondary-dark);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        
+        .btn-info {
+            background-color: var(--info);
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background-color: #2563eb;
+        }
+        
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+            background-color: rgba(109, 40, 217, 0.05);
+        }
+        
+        #documentInput, #voiceInput {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .upload-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            color: var(--text-light);
+        }
+        
+        .upload-text {
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .upload-subtext {
+            color: var(--text-light);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .file-list {
+            margin-top: 16px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        .file-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .file-icon {
+            color: var(--secondary);
+            flex-shrink: 0;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+        
+        .file-size {
+            font-size: 10px;
+            color: var(--text-light);
+            flex-shrink: 0;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .file-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 12px;
+            transition: color 0.2s;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .file-action-btn:hover {
+            color: var(--text);
+        }
+        
+        .file-action-btn.delete:hover {
+            color: var(--danger);
+        }
+        
+        /* File upload progress */
+        .upload-progress {
+            width: 100%;
+            height: 4px;
+            background-color: var(--border);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .upload-progress-bar {
+            height: 100%;
+            background-color: var(--secondary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .upload-status {
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+            text-align: center;
+        }
+        
+        .upload-status.success {
+            color: var(--success);
+        }
+        
+        .upload-status.error {
+            color: var(--danger);
+        }
+        
+        /* Actions Section */
+        .actions-section {
+            margin-top: 20px;
+        }
+        
+        .actions-card {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius);
+            padding: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .actions-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .action-btn {
+            width: 100%;
+            justify-content: flex-start;
+            padding: 12px 16px;
+            text-align: left;
+        }
+        
+        /* Animation for new file items */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .file-item.new {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                padding: 20px 12px;
+            }
+            
+            .sidebar.collapsed {
+                padding: 20px 8px;
+            }
+            
+            .sidebar-toggle {
+                right: -10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar collapsed" id="sidebar">
+        <div class="logo-container">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="logo-text">RAG AI</div>
+            </div>
+            <!-- Sidebar Toggle Button -->
+            <div class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-chevron-left"></i>
+            </div>
+        </div>
+        
+        <!-- Configuration Section in Sidebar -->
+        <div class="config-section">
+            <!-- API Key Card -->
+            <div class="card api-key-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div class="card-title">API Configuration</div>
+                </div>
+                <div class="api-input-group">
+                    <div class="form-group">
+                        <label class="form-label">API Key</label>
+                        <input type="password" class="form-input" id="apiKeyInput" placeholder="Enter Cohere API key">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Model Name</label>
+                        <input type="text" class="form-input" id="modelNameInput" placeholder="Write model name here">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Backend URL</label>
+                        <input type="url" class="form-input" id="backendUrlInput" placeholder="Add backend URL here">
+                    </div>
+                    
+                    <button class="btn btn-primary" id="saveApiConfig">
+                        <span class="btn-text">Save Configuration</span>
+                    </button>
+                    
+                    <div class="info-text" style="font-size: 12px; color: var(--text-light);">
+                        Get API key from <a href="https://cohere.com" target="_blank" style="color: var(--secondary);">Cohere.com</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upload Card -->
+            <div class="card upload-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="card-title">Upload Files</div>
+                </div>
+                
+                <!-- Document Upload Area -->
+                <div class="upload-area" id="documentUploadArea">
+                    <input type="file" id="documentInput" multiple accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.pptx">
+                    <div class="upload-icon">
+                        <i class="fas fa-file-upload"></i>
+                    </div>
+                    <div class="upload-text">Upload Documents</div>
+                    <div class="upload-subtext">PDF, DOCX, TXT, CSV, XLSX, PPTX</div>
+                    <div class="upload-progress" id="documentUploadProgress">
+                        <div class="upload-progress-bar" id="documentUploadProgressBar"></div>
+                    </div>
+                    <div class="upload-status" id="documentUploadStatus"></div>
+                </div>
+                
+                <!-- Voice Upload Area -->
+                <div class="upload-area" id="voiceUploadArea" style="margin-top: 16px;">
+                    <input type="file" id="voiceInput" multiple accept=".wav,.mp3,.ogg,.m4a">
+                    <div class="upload-icon">
+                        <i class="fas fa-microphone-alt"></i>
+                    </div>
+                    <div class="upload-text">Upload Voice Samples</div>
+                    <div class="upload-subtext">WAV, MP3, OGG, M4A</div>
+                    <div class="upload-progress" id="voiceUploadProgress">
+                        <div class="upload-progress-bar" id="voiceUploadProgressBar"></div>
+                    </div>
+                    <div class="upload-status" id="voiceUploadStatus"></div>
+                </div>
+                
+                <div class="file-list" id="fileList">
+                    <!-- Files will be dynamically added here -->
+                </div>
+            </div>
+            
+            <!-- Actions Section -->
+            <div class="actions-section">
+                <div class="card actions-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="card-title">Actions</div>
+                    </div>
+                    <div class="actions-buttons">
+                        <button class="btn btn-danger action-btn" id="clearChatBtn">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Clear Chat</span>
+                        </button>
+                        <button class="btn btn-info action-btn" id="shareChatBtn">
+                            <i class="fas fa-share-alt"></i>
+                            <span>Share Chat</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // File storage in localStorage
+        const FILE_STORAGE_KEY = 'rag_ai_uploaded_files';
+        const API_CONFIG_KEY = 'rag_ai_api_config';
+        
+        // Initialize data
+        let uploadedFiles = JSON.parse(localStorage.getItem(FILE_STORAGE_KEY)) || [];
+        let apiConfig = JSON.parse(localStorage.getItem(API_CONFIG_KEY)) || {
+            apiKey: '',
+            modelName: '',
+            backendUrl: ''
+        };
+        
+        // Sidebar Toggle Functionality
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        
+        // Start with collapsed state by default
+        sidebar.classList.add('collapsed');
+        
+        // Listen for messages from parent window
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'setInitialState') {
+                if (event.data.collapsed) {
+                    sidebar.classList.add('collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                }
+            }
+        });
+        
+        sidebarToggle.addEventListener('click', function() {
+            toggleSidebar();
+        });
+        
+        function toggleSidebar() {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            
+            // Send message to parent window about sidebar state
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'sidebarToggle',
+                    collapsed: isCollapsed
+                }, '*');
+            }
+            
+            // Store sidebar state in localStorage
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+        }
+        
+        // Check for saved sidebar state
+        const savedSidebarState = localStorage.getItem('sidebarCollapsed');
+        if (savedSidebarState === 'true') {
+            sidebar.classList.add('collapsed');
+        }
+        
+        // API Configuration Handling
+        document.getElementById('saveApiConfig').addEventListener('click', function() {
+            const apiKey = document.getElementById('apiKeyInput').value;
+            const modelName = document.getElementById('modelNameInput').value;
+            const backendUrl = document.getElementById('backendUrlInput').value;
+            
+            if (apiKey.trim() === '' || modelName.trim() === '' || backendUrl.trim() === '') {
+                alert('Please fill in all configuration fields');
+                return;
+            }
+            
+            // Save configuration
+            apiConfig = {
+                apiKey,
+                modelName,
+                backendUrl
+            };
+            
+            localStorage.setItem(API_CONFIG_KEY, JSON.stringify(apiConfig));
+            
+            // Notify parent window
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'apiConfigured',
+                    config: apiConfig
+                }, '*');
+            }
+            
+            // Mask the API key in the input
+            if (apiKey.length > 4) {
+                document.getElementById('apiKeyInput').value = '•'.repeat(apiKey.length);
+            }
+        });
+        
+        // File Upload Functionality
+        const documentInput = document.getElementById('documentInput');
+        const voiceInput = document.getElementById('voiceInput');
+        const documentUploadArea = document.getElementById('documentUploadArea');
+        const voiceUploadArea = document.getElementById('voiceUploadArea');
+        const documentUploadProgress = document.getElementById('documentUploadProgress');
+        const documentUploadProgressBar = document.getElementById('documentUploadProgressBar');
+        const voiceUploadProgress = document.getElementById('voiceUploadProgress');
+        const voiceUploadProgressBar = document.getElementById('voiceUploadProgressBar');
+        const documentUploadStatus = document.getElementById('documentUploadStatus');
+        const voiceUploadStatus = document.getElementById('voiceUploadStatus');
+        const fileList = document.getElementById('fileList');
+        
+        // Display existing files on load
+        displayFiles();
+        
+        // Load saved API configuration
+        loadApiConfig();
+        
+        function loadApiConfig() {
+            if (apiConfig.apiKey) {
+                document.getElementById('apiKeyInput').value = '•'.repeat(apiConfig.apiKey.length);
+            }
+            if (apiConfig.modelName) {
+                document.getElementById('modelNameInput').value = apiConfig.modelName;
+            }
+            if (apiConfig.backendUrl) {
+                document.getElementById('backendUrlInput').value = apiConfig.backendUrl;
+            }
+        }
+        
+        function displayFiles() {
+            fileList.innerHTML = '';
+            
+            if (uploadedFiles.length === 0) {
+                fileList.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-light); font-size: 14px;">
+                        <i class="fas fa-folder-open" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                        No files uploaded yet
+                    </div>
+                `;
+                return;
+            }
+            
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-icon"><i class="${getFileIcon(file.type, file.category)}"></i></div>
+                        <div>
+                            <div class="file-name" title="${file.name}">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)} • ${file.category}</div>
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="file-action-btn view" onclick="viewFile(${index})" title="View">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="file-action-btn delete" onclick="deleteFile(${index})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+        
+        function getFileIcon(fileType, category) {
+            if (category === 'voice') {
+                return 'fas fa-microphone-alt';
+            }
+            if (fileType.includes('pdf')) return 'fas fa-file-pdf';
+            if (fileType.includes('word') || fileType.includes('doc')) return 'fas fa-file-word';
+            if (fileType.includes('excel') || fileType.includes('sheet')) return 'fas fa-file-excel';
+            if (fileType.includes('powerpoint') || fileType.includes('presentation')) return 'fas fa-file-powerpoint';
+            if (fileType.includes('text') || fileType.includes('plain')) return 'fas fa-file-alt';
+            if (fileType.includes('csv')) return 'fas fa-file-csv';
+            return 'fas fa-file';
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function viewFile(index) {
+            const file = uploadedFiles[index];
+            alert(`Viewing file: ${file.name}\n\nType: ${file.type}\nCategory: ${file.category}\nSize: ${formatFileSize(file.size)}\n\nIn a real application, this would open a preview or player for the file.`);
+        }
+        
+        function deleteFile(index) {
+            if (confirm(`Are you sure you want to delete "${uploadedFiles[index].name}"?`)) {
+                uploadedFiles.splice(index, 1);
+                localStorage.setItem(FILE_STORAGE_KEY, JSON.stringify(uploadedFiles));
+                displayFiles();
+                
+                // Notify parent window
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'fileDeleted'
+                    }, '*');
+                }
+            }
+        }
+        
+        // Document upload event handlers
+        documentUploadArea.addEventListener('click', function(e) {
+            if (e.target !== documentInput) {
+                documentInput.click();
+            }
+        });
+        
+        documentInput.addEventListener('change', function(e) {
+            handleFiles(e.target.files, 'document');
+            documentInput.value = '';
+        });
+        
+        // Voice upload event handlers
+        voiceUploadArea.addEventListener('click', function(e) {
+            if (e.target !== voiceInput) {
+                voiceInput.click();
+            }
+        });
+        
+        voiceInput.addEventListener('change', function(e) {
+            handleFiles(e.target.files, 'voice');
+            voiceInput.value = '';
+        });
+        
+        // Drag and drop functionality
+        [documentUploadArea, voiceUploadArea].forEach(area => {
+            area.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.borderColor = 'var(--primary)';
+                this.style.backgroundColor = 'rgba(109, 40, 217, 0.1)';
+            });
+            
+            area.addEventListener('dragleave', function() {
+                this.style.borderColor = 'var(--border)';
+                this.style.backgroundColor = 'transparent';
+            });
+            
+            area.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.borderColor = 'var(--border)';
+                this.style.backgroundColor = 'transparent';
+                
+                const files = e.dataTransfer.files;
+                const category = this.id === 'documentUploadArea' ? 'document' : 'voice';
+                handleFiles(files, category);
+            });
+        });
+        
+        function handleFiles(files, category) {
+            if (files.length === 0) return;
+            
+            // Set up progress bar
+            const progressBar = category === 'document' ? documentUploadProgressBar : voiceUploadProgressBar;
+            const progressContainer = category === 'document' ? documentUploadProgress : voiceUploadProgress;
+            const statusElement = category === 'document' ? documentUploadStatus : voiceUploadStatus;
+            
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            let processedFiles = 0;
+            const totalFiles = files.length;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Simulate file processing
+                setTimeout(() => {
+                    // Create file object
+                    const fileObj = {
+                        id: Date.now() + i,
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        category: category,
+                        uploadedAt: new Date().toISOString(),
+                        content: "Simulated file content for demo purposes"
+                    };
+                    
+                    uploadedFiles.unshift(fileObj);
+                    
+                    processedFiles++;
+                    const progress = (processedFiles / totalFiles) * 100;
+                    progressBar.style.width = `${progress}%`;
+                    
+                    if (processedFiles === totalFiles) {
+                        // Save to localStorage
+                        localStorage.setItem(FILE_STORAGE_KEY, JSON.stringify(uploadedFiles));
+                        
+                        // Update file list
+                        displayFiles();
+                        
+                        // Show success message
+                        statusElement.textContent = `${totalFiles} ${category} file(s) uploaded successfully!`;
+                        statusElement.className = 'upload-status success';
+                        statusElement.style.display = 'block';
+                        
+                        // Notify parent window
+                        if (window.parent && window.parent !== window) {
+                            window.parent.postMessage({
+                                type: 'fileUploaded',
+                                count: totalFiles,
+                                category: category
+                            }, '*');
+                        }
+                        
+                        // Reset progress bar after delay
+                        setTimeout(() => {
+                            progressContainer.style.display = 'none';
+                            statusElement.style.display = 'none';
+                        }, 3000);
+                    }
+                }, i * 500);
+            }
+        }
+        
+        // Action buttons
+        document.getElementById('clearChatBtn').addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear all chat history?')) {
+                // Notify parent window
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'clearChat'
+                    }, '*');
+                }
+            }
+        });
+        
+        document.getElementById('shareChatBtn').addEventListener('click', function() {
+            // In a real app, this would open a share dialog
+            const shareUrl = window.location.href;
+            alert('Share functionality would be implemented here. Chat URL: ' + shareUrl);
+        });
+    </script>
+</body>
+</html>
