@@ -1,0 +1,2282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Authentication</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        :root {
+            --primary: #6d28d9;
+            --primary-dark: #5b21b6;
+            --secondary: #10b981;
+            --secondary-dark: #0d9668;
+            --background: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-light: #cbd5e1;
+            --border: #334155;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --success: #10b981;
+            --info: #3b82f6;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            --radius: 12px;
+        }
+        
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Compact Header */
+        .compact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-title {
+            flex: 1;
+        }
+        
+        .header-title h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .header-title p {
+            color: var(--text-light);
+            font-size: 11px;
+        }
+        
+        /* User Profile Compact */
+        .user-profile-compact {
+            position: relative;
+        }
+        
+        .user-profile-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+        }
+        
+        .user-profile-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+        
+        .user-avatar-small {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .user-avatar-small img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        .user-name-small {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+        }
+        
+        /* Compact Dropdown Menu */
+        .dropdown-compact {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            min-width: 220px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .dropdown-compact.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-item-compact {
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            font-size: 13px;
+        }
+        
+        .dropdown-item-compact:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-item-compact:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .dropdown-icon-compact {
+            width: 18px;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 12px;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--border);
+            margin: 4px 0;
+        }
+        
+        /* User Selection Section */
+        .user-selection-section {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            display: none;
+        }
+        
+        .user-selection-section.active {
+            display: block;
+        }
+        
+        .user-selection-title {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .user-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .user-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .user-option:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--border);
+        }
+        
+        .user-option.active {
+            background-color: rgba(109, 40, 217, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .user-option-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .user-option-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        .user-option-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .user-option-name {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .user-option-role {
+            font-size: 11px;
+            color: var(--text-light);
+        }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .role-badge.admin {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+        
+        .role-badge.guest {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: var(--info);
+        }
+        
+        /* Admin Section */
+        .admin-section-compact {
+            padding: 12px;
+            border-top: 1px solid var(--border);
+            display: none;
+        }
+        
+        .admin-section-compact.active {
+            display: block;
+        }
+        
+        .admin-section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-light);
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .users-list-compact {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+        
+        .user-list-item-compact {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            background-color: rgba(255, 255, 255, 0.03);
+            transition: all 0.2s;
+        }
+        
+        .user-list-item-compact:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .user-list-avatar-compact {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .user-list-avatar-compact img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        .user-list-info-compact {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .user-list-name-compact {
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 1px;
+        }
+        
+        .user-list-role-compact {
+            font-size: 9px;
+            color: var(--text-light);
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .action-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .action-btn.edit {
+            color: var(--info);
+        }
+        
+        .action-btn.delete {
+            color: var(--danger);
+        }
+        
+        /* Authentication Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .auth-modal-compact {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-overlay.active .auth-modal-compact {
+            transform: translateY(0);
+        }
+        
+        .modal-header-compact {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .modal-title-compact {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .modal-subtitle-compact {
+            color: var(--text-light);
+            font-size: 13px;
+        }
+        
+        .auth-form-compact {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        
+        .form-group-compact {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .form-label-compact {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .form-input-compact {
+            padding: 10px 14px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .form-input-compact:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.1);
+        }
+        
+        .form-input-compact.small {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        
+        .avatar-upload-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .avatar-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            flex-shrink: 0;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .avatar-upload-btn {
+            flex: 1;
+        }
+        
+        .avatar-upload-label {
+            display: inline-block;
+            padding: 10px 16px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .avatar-upload-label:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary);
+        }
+        
+        .avatar-change-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+        
+        .avatar-preview:hover .avatar-change-overlay {
+            opacity: 1;
+        }
+        
+        .avatar-change-overlay i {
+            font-size: 16px;
+            color: white;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--secondary-dark);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #d97706;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+        
+        .forgot-password-link {
+            text-align: right;
+            margin-top: 4px;
+        }
+        
+        .forgot-password-link a {
+            color: var(--info);
+            font-size: 12px;
+            text-decoration: none;
+        }
+        
+        .forgot-password-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .otp-input-group {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .otp-input {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+        
+        .otp-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.1);
+        }
+        
+        .resend-otp {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .resend-otp a {
+            color: var(--info);
+            cursor: pointer;
+        }
+        
+        .resend-otp a:hover {
+            text-decoration: underline;
+        }
+        
+        .resend-otp.disabled {
+            opacity: 0.5;
+        }
+        
+        .resend-otp.disabled a {
+            cursor: not-allowed;
+            color: var(--text-light);
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            color: white;
+            z-index: 3000;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+            font-size: 13px;
+            max-width: 300px;
+        }
+        
+        .notification.success {
+            background-color: var(--success);
+        }
+        
+        .notification.error {
+            background-color: var(--danger);
+        }
+        
+        .notification.warning {
+            background-color: var(--warning);
+        }
+        
+        .notification.info {
+            background-color: var(--info);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Confirmation Modal */
+        .confirmation-modal {
+            text-align: center;
+        }
+        
+        .confirmation-modal .modal-title-compact {
+            margin-bottom: 16px;
+        }
+        
+        .confirmation-modal p {
+            color: var(--text-light);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .confirmation-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Compact Header -->
+    <div class="compact-header">
+        <div class="header-title">
+            <h2>User Management</h2>
+            <p>Select or manage users</p>
+        </div>
+        
+        <!-- User Profile Compact -->
+        <div class="user-profile-compact">
+            <div class="user-profile-toggle" id="userProfileToggle">
+                <div class="user-avatar-small" id="userAvatarSmall">
+                    <span id="avatarInitialSmall">?</span>
+                </div>
+                <div class="user-name-small" id="userNameSmall">Select User</div>
+                <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
+            </div>
+            
+            <!-- Compact Dropdown Menu -->
+            <div class="dropdown-compact" id="dropdownCompact">
+                <!-- User Selection Section -->
+                <div class="user-selection-section active" id="userSelectionSection">
+                    <div class="user-selection-title">Select User Type</div>
+                    <div class="user-options">
+                        <div class="user-option" data-user-type="admin">
+                            <div class="user-option-avatar">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div class="user-option-info">
+                                <div class="user-option-name">Admin User</div>
+                                <div class="user-option-role">Full system access</div>
+                            </div>
+                            <span class="role-badge admin">ADMIN</span>
+                        </div>
+                        <div class="user-option" data-user-type="guest">
+                            <div class="user-option-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="user-option-info">
+                                <div class="user-option-name">Guest User</div>
+                                <div class="user-option-role">Limited access</div>
+                            </div>
+                            <span class="role-badge guest">GUEST</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Menu Options -->
+                <div class="dropdown-item-compact" id="signInOption">
+                    <div class="dropdown-icon-compact">
+                        <i class="fas fa-sign-in-alt"></i>
+                    </div>
+                    <div>Sign In</div>
+                </div>
+                <div class="dropdown-item-compact" id="signUpOption">
+                    <div class="dropdown-icon-compact">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div>Sign Up</div>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item-compact" id="switchUserOption" style="display: none;">
+                    <div class="dropdown-icon-compact">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div>Switch User</div>
+                </div>
+                <div class="dropdown-item-compact" id="changeAvatarOption" style="display: none;">
+                    <div class="dropdown-icon-compact">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div>Change Avatar</div>
+                </div>
+                <div class="dropdown-item-compact" id="changePasswordOption" style="display: none;">
+                    <div class="dropdown-icon-compact">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div>Change Password</div>
+                </div>
+                <div class="dropdown-item-compact" id="signOutOption" style="display: none;">
+                    <div class="dropdown-icon-compact">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                    <div>Sign Out</div>
+                </div>
+                
+                <!-- Admin Management Section -->
+                <div class="admin-section-compact" id="adminSectionCompact">
+                    <div class="admin-section-title">Manage Users</div>
+                    <div class="users-list-compact" id="usersListCompact">
+                        <!-- Users will be dynamically listed here -->
+                    </div>
+                    <button class="btn btn-primary btn-small" id="addUserBtn" style="width: 100%;">
+                        <i class="fas fa-user-plus"></i> Add New User
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign In Modal -->
+    <div class="modal-overlay" id="signInModal">
+        <div class="auth-modal-compact">
+            <div class="modal-header-compact">
+                <div class="modal-title-compact">Sign In</div>
+                <div class="modal-subtitle-compact">Access your account</div>
+            </div>
+            <form class="auth-form-compact" id="signInForm">
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Email</label>
+                    <input type="email" class="form-input-compact" id="signInEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Password</label>
+                    <input type="password" class="form-input-compact" id="signInPassword" placeholder="Enter password" required>
+                </div>
+                <div class="forgot-password-link">
+                    <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Sign In
+                </button>
+                <div style="text-align: center; margin-top: 12px; color: var(--text-light); font-size: 12px;">
+                    No account? <a href="#" id="switchToSignUp" style="color: var(--secondary);">Sign Up</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Sign Up Modal -->
+    <div class="modal-overlay" id="signUpModal">
+        <div class="auth-modal-compact">
+            <div class="modal-header-compact">
+                <div class="modal-title-compact">Sign Up</div>
+                <div class="modal-subtitle-compact">Create new account</div>
+            </div>
+            <form class="auth-form-compact" id="signUpForm">
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Avatar (Optional)</label>
+                    <div class="avatar-upload-container">
+                        <div class="avatar-preview" id="signUpAvatarPreview">
+                            <span id="signUpAvatarInitial">?</span>
+                            <div class="avatar-change-overlay">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </div>
+                        <div class="avatar-upload-btn">
+                            <label for="signUpAvatarInput" class="avatar-upload-label">
+                                <i class="fas fa-upload"></i> Choose Image
+                            </label>
+                            <input type="file" id="signUpAvatarInput" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Full Name</label>
+                    <input type="text" class="form-input-compact" id="signUpName" placeholder="Enter full name" required>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Email</label>
+                    <input type="email" class="form-input-compact" id="signUpEmail" placeholder="Enter email" required>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Password</label>
+                    <input type="password" class="form-input-compact" id="signUpPassword" placeholder="Create password" required>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Confirm Password</label>
+                    <input type="password" class="form-input-compact" id="signUpConfirmPassword" placeholder="Confirm password" required>
+                </div>
+                <button type="submit" class="btn btn-secondary">
+                    Create Account
+                </button>
+                <div style="text-align: center; margin-top: 12px; color: var(--text-light); font-size: 12px;">
+                    Have an account? <a href="#" id="switchToSignIn" style="color: var(--secondary);">Sign In</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgotPasswordModal">
+        <div class="auth-modal-compact">
+            <div class="modal-header-compact">
+                <div class="modal-title-compact">Reset Password</div>
+                <div class="modal-subtitle-compact" id="forgotPasswordSubtitle">Enter your email to receive OTP</div>
+            </div>
+            <form class="auth-form-compact" id="forgotPasswordForm">
+                <div class="form-group-compact" id="emailStep">
+                    <label class="form-label-compact">Email</label>
+                    <input type="email" class="form-input-compact" id="forgotPasswordEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group-compact" id="otpStep" style="display: none;">
+                    <label class="form-label-compact">Enter OTP</label>
+                    <div class="otp-input-group">
+                        <input type="text" maxlength="1" class="otp-input" id="otp1">
+                        <input type="text" maxlength="1" class="otp-input" id="otp2">
+                        <input type="text" maxlength="1" class="otp-input" id="otp3">
+                        <input type="text" maxlength="1" class="otp-input" id="otp4">
+                        <input type="text" maxlength="1" class="otp-input" id="otp5">
+                        <input type="text" maxlength="1" class="otp-input" id="otp6">
+                    </div>
+                    <div class="resend-otp" id="resendOtpContainer">
+                        <span>Didn't receive OTP? </span>
+                        <a href="#" id="resendOtpLink">Resend</a>
+                        <span id="resendTimer"></span>
+                    </div>
+                </div>
+                <div class="form-group-compact" id="newPasswordStep" style="display: none;">
+                    <label class="form-label-compact">New Password</label>
+                    <input type="password" class="form-input-compact" id="newPassword" placeholder="Enter new password" required>
+                </div>
+                <div class="form-group-compact" id="confirmPasswordStep" style="display: none;">
+                    <label class="form-label-compact">Confirm New Password</label>
+                    <input type="password" class="form-input-compact" id="confirmNewPassword" placeholder="Confirm new password" required>
+                </div>
+                <button type="button" class="btn btn-primary" id="forgotPasswordNextBtn">
+                    Send OTP
+                </button>
+                <div style="text-align: center; margin-top: 12px;">
+                    <a href="#" id="backToSignIn" style="color: var(--secondary); font-size: 12px;">Back to Sign In</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="auth-modal-compact">
+            <div class="modal-header-compact">
+                <div class="modal-title-compact">Change Password</div>
+                <div class="modal-subtitle-compact">Update your password</div>
+            </div>
+            <form class="auth-form-compact" id="changePasswordForm">
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Current Password</label>
+                    <input type="password" class="form-input-compact" id="currentPassword" placeholder="Enter current password" required>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">New Password</label>
+                    <input type="password" class="form-input-compact" id="newPasswordChange" placeholder="Enter new password" required>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Confirm New Password</label>
+                    <input type="password" class="form-input-compact" id="confirmNewPasswordChange" placeholder="Confirm new password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Update Password
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Avatar Modal -->
+    <div class="modal-overlay" id="changeAvatarModal">
+        <div class="auth-modal-compact">
+            <div class="modal-header-compact">
+                <div class="modal-title-compact">Change Avatar</div>
+                <div class="modal-subtitle-compact">Update your profile picture</div>
+            </div>
+            <form class="auth-form-compact" id="changeAvatarForm">
+                <div class="form-group-compact">
+                    <div class="avatar-upload-container">
+                        <div class="avatar-preview" id="changeAvatarPreview">
+                            <span id="changeAvatarInitial">?</span>
+                            <div class="avatar-change-overlay">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </div>
+                        <div class="avatar-upload-btn">
+                            <label for="changeAvatarInput" class="avatar-upload-label">
+                                <i class="fas fa-upload"></i> Choose Image
+                            </label>
+                            <input type="file" id="changeAvatarInput" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="confirmation-actions">
+                    <button type="button" class="btn btn-outline" id="cancelChangeAvatar">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Update Avatar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit User Modal (Admin Only) -->
+    <div class="modal-overlay" id="editUserModal">
+        <div class="auth-modal-compact">
+            <div class="modal-header-compact">
+                <div class="modal-title-compact">Edit User</div>
+                <div class="modal-subtitle-compact" id="editUserSubtitle">Update user details</div>
+            </div>
+            <form class="auth-form-compact" id="editUserForm">
+                <input type="hidden" id="editUserId">
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Avatar</label>
+                    <div class="avatar-upload-container">
+                        <div class="avatar-preview" id="editUserAvatarPreview">
+                            <span id="editUserAvatarInitial">?</span>
+                            <div class="avatar-change-overlay">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </div>
+                        <div class="avatar-upload-btn">
+                            <label for="editUserAvatarInput" class="avatar-upload-label">
+                                <i class="fas fa-upload"></i> Change Image
+                            </label>
+                            <input type="file" id="editUserAvatarInput" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Full Name</label>
+                    <input type="text" class="form-input-compact" id="editUserName" placeholder="Enter full name" required>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Email</label>
+                    <input type="email" class="form-input-compact" id="editUserEmail" placeholder="Enter email" required>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Role</label>
+                    <select class="form-input-compact" id="editUserRole" required>
+                        <option value="guest">Guest</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-group-compact">
+                    <label class="form-label-compact">Reset Password (Optional)</label>
+                    <input type="password" class="form-input-compact" id="editUserPassword" placeholder="Leave empty to keep current">
+                </div>
+                <div class="confirmation-actions">
+                    <button type="button" class="btn btn-outline" id="cancelEditUser">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Update User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteConfirmationModal">
+        <div class="auth-modal-compact confirmation-modal">
+            <div class="modal-header-compact">
+                <div class="modal-title-compact">Delete User</div>
+            </div>
+            <p id="deleteConfirmationText">Are you sure you want to delete this user? This action cannot be undone.</p>
+            <div class="confirmation-actions">
+                <button type="button" class="btn btn-outline" id="cancelDelete">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmDelete" style="background-color: var(--danger);">
+                    Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Optimized data storage and management
+        class UserManager {
+            constructor() {
+                this.USER_STORAGE_KEY = 'ai_rag_users';
+                this.CURRENT_USER_KEY = 'ai_rag_current_user';
+                this.OTP_STORAGE_KEY = 'ai_rag_otps';
+                this.users = this.loadUsers();
+                this.currentUser = this.loadCurrentUser();
+                this.otps = this.loadOTPs();
+                this.eventListeners = new Map();
+                this.init();
+            }
+            
+            loadUsers() {
+                const stored = localStorage.getItem(this.USER_STORAGE_KEY);
+                if (stored) {
+                    return JSON.parse(stored);
+                }
+                
+                // Default users
+                return [
+                    { 
+                        id: 'ADMIN-001',
+                        email: "admin@example.com", 
+                        name: "System Admin", 
+                        role: "admin",
+                        password: "admin123",
+                        avatar: null,
+                        createdAt: Date.now(),
+                        lastLogin: null
+                    },
+                    { 
+                        id: 'GUEST-001',
+                        email: "guest@example.com", 
+                        name: "Demo Guest", 
+                        role: "guest",
+                        password: "guest123",
+                        avatar: null,
+                        createdAt: Date.now(),
+                        lastLogin: null
+                    }
+                ];
+            }
+            
+            loadCurrentUser() {
+                const stored = localStorage.getItem(this.CURRENT_USER_KEY);
+                return stored ? JSON.parse(stored) : null;
+            }
+            
+            loadOTPs() {
+                const stored = localStorage.getItem(this.OTP_STORAGE_KEY);
+                return stored ? JSON.parse(stored) : {};
+            }
+            
+            saveUsers() {
+                localStorage.setItem(this.USER_STORAGE_KEY, JSON.stringify(this.users));
+            }
+            
+            saveCurrentUser() {
+                if (this.currentUser) {
+                    localStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(this.currentUser));
+                } else {
+                    localStorage.removeItem(this.CURRENT_USER_KEY);
+                }
+            }
+            
+            saveOTPs() {
+                localStorage.setItem(this.OTP_STORAGE_KEY, JSON.stringify(this.otps));
+            }
+            
+            generateUserId(role) {
+                const prefix = role === 'admin' ? 'ADMIN' : 'GUEST';
+                const existingIds = this.users
+                    .filter(u => u.id.startsWith(prefix))
+                    .map(u => parseInt(u.id.split('-')[1]))
+                    .filter(id => !isNaN(id));
+                
+                const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+                return `${prefix}-${(maxId + 1).toString().padStart(3, '0')}`;
+            }
+            
+            findUserByEmail(email) {
+                return this.users.find(user => user.email === email);
+            }
+            
+            findUserById(id) {
+                return this.users.find(user => user.id === id);
+            }
+            
+            addUser(userData) {
+                const userId = this.generateUserId(userData.role);
+                const newUser = {
+                    id: userId,
+                    email: userData.email,
+                    name: userData.name,
+                    role: userData.role,
+                    password: userData.password,
+                    avatar: userData.avatar || null,
+                    createdAt: Date.now(),
+                    lastLogin: null
+                };
+                
+                this.users.push(newUser);
+                this.saveUsers();
+                return newUser;
+            }
+            
+            updateUser(id, updates) {
+                const index = this.users.findIndex(user => user.id === id);
+                if (index !== -1) {
+                    this.users[index] = { ...this.users[index], ...updates };
+                    this.saveUsers();
+                    
+                    // Update current user if it's the same user
+                    if (this.currentUser && this.currentUser.id === id) {
+                        this.currentUser = { ...this.currentUser, ...updates };
+                        this.saveCurrentUser();
+                    }
+                    
+                    return true;
+                }
+                return false;
+            }
+            
+            deleteUser(id) {
+                if (this.currentUser && this.currentUser.id === id) return false;
+                
+                const initialLength = this.users.length;
+                this.users = this.users.filter(user => user.id !== id);
+                
+                if (this.users.length < initialLength) {
+                    this.saveUsers();
+                    return true;
+                }
+                return false;
+            }
+            
+            authenticate(email, password) {
+                const user = this.findUserByEmail(email);
+                if (user && user.password === password) {
+                    user.lastLogin = Date.now();
+                    this.saveUsers();
+                    
+                    this.currentUser = {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        role: user.role,
+                        avatar: user.avatar,
+                        lastLogin: user.lastLogin
+                    };
+                    
+                    this.saveCurrentUser();
+                    return this.currentUser;
+                }
+                return null;
+            }
+            
+            signOut() {
+                this.currentUser = null;
+                this.saveCurrentUser();
+            }
+            
+            getUserInitials(name) {
+                return name.split(' ')
+                    .map(part => part[0])
+                    .join('')
+                    .toUpperCase()
+                    .substring(0, 2);
+            }
+            
+            // Image handling
+            imageToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+            
+            // OTP management
+            generateOTP(email) {
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                const expiresAt = Date.now() + (5 * 60 * 1000); // 5 minutes
+                
+                this.otps[email] = {
+                    otp,
+                    expiresAt,
+                    attempts: 0
+                };
+                
+                this.saveOTPs();
+                return otp;
+            }
+            
+            validateOTP(email, otp) {
+                const otpData = this.otps[email];
+                if (!otpData) return false;
+                
+                if (Date.now() > otpData.expiresAt) {
+                    delete this.otps[email];
+                    this.saveOTPs();
+                    return false;
+                }
+                
+                if (otpData.otp === otp) {
+                    delete this.otps[email];
+                    this.saveOTPs();
+                    return true;
+                }
+                
+                otpData.attempts++;
+                if (otpData.attempts >= 3) {
+                    delete this.otps[email];
+                    this.saveOTPs();
+                } else {
+                    this.otps[email] = otpData;
+                    this.saveOTPs();
+                }
+                
+                return false;
+            }
+            
+            clearExpiredOTPs() {
+                const now = Date.now();
+                Object.keys(this.otps).forEach(email => {
+                    if (this.otps[email].expiresAt < now) {
+                        delete this.otps[email];
+                    }
+                });
+                this.saveOTPs();
+            }
+            
+            // Event management
+            addEventListener(element, event, handler) {
+                if (!this.eventListeners.has(element)) {
+                    this.eventListeners.set(element, []);
+                }
+                this.eventListeners.get(element).push({ event, handler });
+                element.addEventListener(event, handler);
+            }
+            
+            cleanup() {
+                this.eventListeners.forEach((listeners, element) => {
+                    listeners.forEach(({ event, handler }) => {
+                        element.removeEventListener(event, handler);
+                    });
+                });
+                this.eventListeners.clear();
+            }
+            
+            init() {
+                // Clear expired OTPs on init
+                this.clearExpiredOTPs();
+            }
+        }
+
+        // Initialize user manager
+        const userManager = new UserManager();
+
+        // DOM Elements cache
+        const domCache = {
+            userProfileToggle: document.getElementById('userProfileToggle'),
+            dropdownCompact: document.getElementById('dropdownCompact'),
+            userAvatarSmall: document.getElementById('userAvatarSmall'),
+            avatarInitialSmall: document.getElementById('avatarInitialSmall'),
+            userNameSmall: document.getElementById('userNameSmall'),
+            userSelectionSection: document.getElementById('userSelectionSection'),
+            userOptions: document.querySelectorAll('.user-option'),
+            signInOption: document.getElementById('signInOption'),
+            signUpOption: document.getElementById('signUpOption'),
+            switchUserOption: document.getElementById('switchUserOption'),
+            changeAvatarOption: document.getElementById('changeAvatarOption'),
+            changePasswordOption: document.getElementById('changePasswordOption'),
+            signOutOption: document.getElementById('signOutOption'),
+            adminSectionCompact: document.getElementById('adminSectionCompact'),
+            usersListCompact: document.getElementById('usersListCompact'),
+            addUserBtn: document.getElementById('addUserBtn'),
+            signInModal: document.getElementById('signInModal'),
+            signUpModal: document.getElementById('signUpModal'),
+            forgotPasswordModal: document.getElementById('forgotPasswordModal'),
+            changePasswordModal: document.getElementById('changePasswordModal'),
+            changeAvatarModal: document.getElementById('changeAvatarModal'),
+            editUserModal: document.getElementById('editUserModal'),
+            deleteConfirmationModal: document.getElementById('deleteConfirmationModal'),
+            signInForm: document.getElementById('signInForm'),
+            signUpForm: document.getElementById('signUpForm'),
+            changePasswordForm: document.getElementById('changePasswordForm'),
+            changeAvatarForm: document.getElementById('changeAvatarForm'),
+            editUserForm: document.getElementById('editUserForm'),
+            switchToSignUp: document.getElementById('switchToSignUp'),
+            switchToSignIn: document.getElementById('switchToSignIn'),
+            forgotPasswordLink: document.getElementById('forgotPasswordLink'),
+            backToSignIn: document.getElementById('backToSignIn'),
+            forgotPasswordForm: document.getElementById('forgotPasswordForm'),
+            forgotPasswordNextBtn: document.getElementById('forgotPasswordNextBtn'),
+            resendOtpLink: document.getElementById('resendOtpLink'),
+            cancelChangeAvatar: document.getElementById('cancelChangeAvatar'),
+            cancelEditUser: document.getElementById('cancelEditUser'),
+            cancelDelete: document.getElementById('cancelDelete'),
+            confirmDelete: document.getElementById('confirmDelete')
+        };
+
+        // State management
+        let currentForgotPasswordStep = 1;
+        let currentForgotPasswordEmail = '';
+        let userToDelete = null;
+        let resendTimer = null;
+
+        // Update UI functions
+        function updateUserDisplay() {
+            if (userManager.currentUser) {
+                const { currentUser } = userManager;
+                
+                // Update avatar
+                if (currentUser.avatar) {
+                    domCache.userAvatarSmall.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.name}">`;
+                } else {
+                    domCache.avatarInitialSmall.textContent = userManager.getUserInitials(currentUser.name);
+                    domCache.userAvatarSmall.innerHTML = `<span id="avatarInitialSmall">${userManager.getUserInitials(currentUser.name)}</span>`;
+                }
+                
+                domCache.userNameSmall.textContent = currentUser.name;
+                
+                // Update dropdown options
+                domCache.signInOption.style.display = 'none';
+                domCache.signUpOption.style.display = 'none';
+                domCache.switchUserOption.style.display = 'flex';
+                domCache.changeAvatarOption.style.display = 'flex';
+                domCache.changePasswordOption.style.display = 'flex';
+                domCache.signOutOption.style.display = 'flex';
+                domCache.userSelectionSection.classList.remove('active');
+                
+                // Show admin section if admin
+                if (currentUser.role === 'admin') {
+                    domCache.adminSectionCompact.classList.add('active');
+                    updateUsersList();
+                } else {
+                    domCache.adminSectionCompact.classList.remove('active');
+                }
+            } else {
+                // Guest state
+                domCache.userAvatarSmall.innerHTML = '<span id="avatarInitialSmall">?</span>';
+                domCache.userNameSmall.textContent = 'Select User';
+                
+                // Update dropdown options
+                domCache.signInOption.style.display = 'flex';
+                domCache.signUpOption.style.display = 'flex';
+                domCache.switchUserOption.style.display = 'none';
+                domCache.changeAvatarOption.style.display = 'none';
+                domCache.changePasswordOption.style.display = 'none';
+                domCache.signOutOption.style.display = 'none';
+                domCache.userSelectionSection.classList.add('active');
+                domCache.adminSectionCompact.classList.remove('active');
+            }
+        }
+
+        function updateUsersList() {
+            if (!domCache.usersListCompact) return;
+            
+            const users = userManager.users.filter(user => 
+                !userManager.currentUser || user.id !== userManager.currentUser.id
+            );
+            
+            if (users.length === 0) {
+                domCache.usersListCompact.innerHTML = `
+                    <div style="text-align: center; padding: 12px; color: var(--text-light); font-size: 12px;">
+                        <i class="fas fa-users" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
+                        No other users found
+                    </div>
+                `;
+                return;
+            }
+            
+            const fragment = document.createDocumentFragment();
+            
+            users.forEach(user => {
+                const userItem = document.createElement('div');
+                userItem.className = 'user-list-item-compact';
+                userItem.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                        <div class="user-list-avatar-compact">
+                            ${user.avatar ? `<img src="${user.avatar}" alt="${user.name}">` : userManager.getUserInitials(user.name)}
+                        </div>
+                        <div class="user-list-info-compact">
+                            <div class="user-list-name-compact">${user.name}</div>
+                            <div class="user-list-role-compact">
+                                <span>${user.role === 'admin' ? 'Administrator' : 'Guest User'}</span>
+                                <span class="role-badge ${user.role}" style="margin-left: 6px;">${user.role.toUpperCase()}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="action-btn edit" data-user-id="${user.id}" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" data-user-id="${user.id}" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                fragment.appendChild(userItem);
+            });
+            
+            domCache.usersListCompact.innerHTML = '';
+            domCache.usersListCompact.appendChild(fragment);
+            
+            // Add event listeners to action buttons
+            domCache.usersListCompact.querySelectorAll('.action-btn.edit').forEach(btn => {
+                btn.addEventListener('click', handleEditUser);
+            });
+            
+            domCache.usersListCompact.querySelectorAll('.action-btn.delete').forEach(btn => {
+                btn.addEventListener('click', handleDeleteUser);
+            });
+        }
+
+        // Modal management
+        function openModal(modal) {
+            modal.classList.add('active');
+        }
+
+        function closeModal(modal) {
+            modal.classList.remove('active');
+            if (modal === domCache.signInModal) {
+                domCache.signInForm.reset();
+            } else if (modal === domCache.signUpModal) {
+                domCache.signUpForm.reset();
+                resetSignUpAvatarPreview();
+            } else if (modal === domCache.forgotPasswordModal) {
+                resetForgotPasswordForm();
+            } else if (modal === domCache.changePasswordModal) {
+                domCache.changePasswordForm.reset();
+            } else if (modal === domCache.changeAvatarModal) {
+                domCache.changeAvatarForm.reset();
+                resetChangeAvatarPreview();
+            } else if (modal === domCache.editUserModal) {
+                domCache.editUserForm.reset();
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                                   type === 'error' ? 'exclamation-circle' : 
+                                   type === 'warning' ? 'exclamation-triangle' : 
+                                   'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 3000);
+        }
+
+        // Avatar handling
+        function setupAvatarUpload(inputId, previewId, initialId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            const initial = document.getElementById(initialId);
+            
+            input.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (!file.type.startsWith('image/')) {
+                        showNotification('Please select an image file', 'error');
+                        return;
+                    }
+                    
+                    if (file.size > 5 * 1024 * 1024) {
+                        showNotification('Image size should be less than 5MB', 'error');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.style.backgroundImage = `url(${e.target.result})`;
+                        preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            preview.addEventListener('click', () => {
+                input.click();
+            });
+        }
+
+        function resetSignUpAvatarPreview() {
+            const preview = document.getElementById('signUpAvatarPreview');
+            const initial = document.getElementById('signUpAvatarInitial');
+            preview.style.backgroundImage = '';
+            preview.innerHTML = '<span id="signUpAvatarInitial">?</span><div class="avatar-change-overlay"><i class="fas fa-camera"></i></div>';
+        }
+
+        function resetChangeAvatarPreview() {
+            const preview = document.getElementById('changeAvatarPreview');
+            const initial = document.getElementById('changeAvatarInitial');
+            if (userManager.currentUser && userManager.currentUser.avatar) {
+                preview.style.backgroundImage = `url(${userManager.currentUser.avatar})`;
+                preview.innerHTML = `<img src="${userManager.currentUser.avatar}" alt="${userManager.currentUser.name}"><div class="avatar-change-overlay"><i class="fas fa-camera"></i></div>`;
+            } else {
+                preview.style.backgroundImage = '';
+                preview.innerHTML = `<span id="changeAvatarInitial">${userManager.getUserInitials(userManager.currentUser.name)}</span><div class="avatar-change-overlay"><i class="fas fa-camera"></i></div>`;
+            }
+        }
+
+        // Forgot password flow
+        function resetForgotPasswordForm() {
+            currentForgotPasswordStep = 1;
+            currentForgotPasswordEmail = '';
+            
+            document.getElementById('emailStep').style.display = 'block';
+            document.getElementById('otpStep').style.display = 'none';
+            document.getElementById('newPasswordStep').style.display = 'none';
+            document.getElementById('confirmPasswordStep').style.display = 'none';
+            
+            document.getElementById('forgotPasswordSubtitle').textContent = 'Enter your email to receive OTP';
+            document.getElementById('forgotPasswordNextBtn').textContent = 'Send OTP';
+            
+            // Clear OTP inputs
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`otp${i}`).value = '';
+            }
+            
+            // Clear timer
+            if (resendTimer) {
+                clearInterval(resendTimer);
+                resendTimer = null;
+            }
+            
+            const resendContainer = document.getElementById('resendOtpContainer');
+            resendContainer.classList.remove('disabled');
+            document.getElementById('resendTimer').textContent = '';
+        }
+
+        function startResendTimer() {
+            let timeLeft = 60;
+            const resendContainer = document.getElementById('resendOtpContainer');
+            const timerElement = document.getElementById('resendTimer');
+            
+            resendContainer.classList.add('disabled');
+            
+            resendTimer = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = ` (${timeLeft}s)`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(resendTimer);
+                    resendContainer.classList.remove('disabled');
+                    timerElement.textContent = '';
+                }
+            }, 1000);
+        }
+
+        // Event Handlers
+        function handleUserSelection(event) {
+            const userType = event.currentTarget.getAttribute('data-user-type');
+            
+            domCache.userOptions.forEach(option => option.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            domCache.avatarInitialSmall.textContent = userType === 'admin' ? 'A' : 'G';
+            domCache.userNameSmall.textContent = userType === 'admin' ? 'Admin User' : 'Guest User';
+            
+            setTimeout(() => {
+                domCache.dropdownCompact.classList.remove('active');
+            }, 300);
+            
+            if (userType === 'admin') {
+                showNotification('Admin user selected. Use admin@example.com / admin123 to sign in.', 'info');
+            } else {
+                showNotification('Guest user selected. Use guest@example.com / guest123 to sign in.', 'info');
+            }
+        }
+
+        function handleSignIn(event) {
+            event.preventDefault();
+            const email = document.getElementById('signInEmail').value;
+            const password = document.getElementById('signInPassword').value;
+            
+            const authenticatedUser = userManager.authenticate(email, password);
+            if (authenticatedUser) {
+                updateUserDisplay();
+                closeModal(domCache.signInModal);
+                showNotification(`Welcome back, ${authenticatedUser.name}!`, 'success');
+            } else {
+                showNotification('Invalid email or password', 'error');
+            }
+        }
+
+        async function handleSignUp(event) {
+            event.preventDefault();
+            const name = document.getElementById('signUpName').value.trim();
+            const email = document.getElementById('signUpEmail').value.trim();
+            const password = document.getElementById('signUpPassword').value;
+            const confirmPassword = document.getElementById('signUpConfirmPassword').value;
+            const avatarFile = document.getElementById('signUpAvatarInput').files[0];
+            
+            if (!name || !email || !password) {
+                showNotification('Please fill all required fields', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showNotification('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            if (userManager.findUserByEmail(email)) {
+                showNotification('User with this email already exists', 'error');
+                return;
+            }
+            
+            let avatarBase64 = null;
+            if (avatarFile) {
+                try {
+                    avatarBase64 = await userManager.imageToBase64(avatarFile);
+                } catch (error) {
+                    showNotification('Error processing image', 'error');
+                    return;
+                }
+            }
+            
+            const newUser = userManager.addUser({
+                email,
+                name,
+                role: 'guest',
+                password,
+                avatar: avatarBase64
+            });
+            
+            userManager.currentUser = {
+                id: newUser.id,
+                email: newUser.email,
+                name: newUser.name,
+                role: newUser.role,
+                avatar: newUser.avatar,
+                lastLogin: Date.now()
+            };
+            userManager.saveCurrentUser();
+            
+            updateUserDisplay();
+            closeModal(domCache.signUpModal);
+            showNotification(`Account created successfully! Welcome ${name}`, 'success');
+        }
+
+        async function handleChangeAvatar(event) {
+            event.preventDefault();
+            const avatarFile = document.getElementById('changeAvatarInput').files[0];
+            
+            if (!avatarFile) {
+                showNotification('Please select an image', 'error');
+                return;
+            }
+            
+            try {
+                const avatarBase64 = await userManager.imageToBase64(avatarFile);
+                const success = userManager.updateUser(userManager.currentUser.id, { avatar: avatarBase64 });
+                
+                if (success) {
+                    updateUserDisplay();
+                    closeModal(domCache.changeAvatarModal);
+                    showNotification('Avatar updated successfully!', 'success');
+                } else {
+                    showNotification('Failed to update avatar', 'error');
+                }
+            } catch (error) {
+                showNotification('Error processing image', 'error');
+            }
+        }
+
+        function handleChangePassword(event) {
+            event.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPasswordChange').value;
+            const confirmPassword = document.getElementById('confirmNewPasswordChange').value;
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showNotification('Please fill all fields', 'error');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showNotification('New passwords do not match', 'error');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showNotification('New password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            // Verify current password
+            const user = userManager.findUserById(userManager.currentUser.id);
+            if (!user || user.password !== currentPassword) {
+                showNotification('Current password is incorrect', 'error');
+                return;
+            }
+            
+            const success = userManager.updateUser(userManager.currentUser.id, { password: newPassword });
+            
+            if (success) {
+                closeModal(domCache.changePasswordModal);
+                showNotification('Password updated successfully!', 'success');
+            } else {
+                showNotification('Failed to update password', 'error');
+            }
+        }
+
+        function handleForgotPasswordNext() {
+            const email = document.getElementById('forgotPasswordEmail').value.trim();
+            
+            if (currentForgotPasswordStep === 1) {
+                // Step 1: Request OTP
+                if (!email) {
+                    showNotification('Please enter your email', 'error');
+                    return;
+                }
+                
+                const user = userManager.findUserByEmail(email);
+                if (!user) {
+                    showNotification('No account found with this email', 'error');
+                    return;
+                }
+                
+                // Generate OTP
+                const otp = userManager.generateOTP(email);
+                currentForgotPasswordEmail = email;
+                
+                // In a real application, you would send the OTP via email
+                // For demo purposes, we'll show it in a notification
+                showNotification(`OTP sent to ${email}. Demo OTP: ${otp}`, 'info');
+                
+                // Move to next step
+                document.getElementById('emailStep').style.display = 'none';
+                document.getElementById('otpStep').style.display = 'block';
+                document.getElementById('forgotPasswordSubtitle').textContent = 'Enter the OTP sent to your email';
+                document.getElementById('forgotPasswordNextBtn').textContent = 'Verify OTP';
+                currentForgotPasswordStep = 2;
+                
+                // Start resend timer
+                startResendTimer();
+                
+                // Auto-focus first OTP input
+                document.getElementById('otp1').focus();
+                
+            } else if (currentForgotPasswordStep === 2) {
+                // Step 2: Verify OTP
+                let otp = '';
+                for (let i = 1; i <= 6; i++) {
+                    otp += document.getElementById(`otp${i}`).value;
+                }
+                
+                if (otp.length !== 6) {
+                    showNotification('Please enter the complete 6-digit OTP', 'error');
+                    return;
+                }
+                
+                const isValid = userManager.validateOTP(currentForgotPasswordEmail, otp);
+                if (!isValid) {
+                    showNotification('Invalid or expired OTP', 'error');
+                    return;
+                }
+                
+                // Move to next step
+                document.getElementById('otpStep').style.display = 'none';
+                document.getElementById('newPasswordStep').style.display = 'block';
+                document.getElementById('confirmPasswordStep').style.display = 'block';
+                document.getElementById('forgotPasswordSubtitle').textContent = 'Create new password';
+                document.getElementById('forgotPasswordNextBtn').textContent = 'Reset Password';
+                currentForgotPasswordStep = 3;
+                
+            } else if (currentForgotPasswordStep === 3) {
+                // Step 3: Reset password
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmNewPassword').value;
+                
+                if (!newPassword || !confirmPassword) {
+                    showNotification('Please fill all fields', 'error');
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    showNotification('Passwords do not match', 'error');
+                    return;
+                }
+                
+                if (newPassword.length < 6) {
+                    showNotification('Password must be at least 6 characters', 'error');
+                    return;
+                }
+                
+                const user = userManager.findUserByEmail(currentForgotPasswordEmail);
+                if (!user) {
+                    showNotification('User not found', 'error');
+                    return;
+                }
+                
+                const success = userManager.updateUser(user.id, { password: newPassword });
+                
+                if (success) {
+                    closeModal(domCache.forgotPasswordModal);
+                    showNotification('Password reset successfully! Please sign in with your new password.', 'success');
+                    openModal(domCache.signInModal);
+                    document.getElementById('signInEmail').value = currentForgotPasswordEmail;
+                } else {
+                    showNotification('Failed to reset password', 'error');
+                }
+            }
+        }
+
+        function handleResendOTP() {
+            const resendContainer = document.getElementById('resendOtpContainer');
+            if (resendContainer.classList.contains('disabled')) {
+                return;
+            }
+            
+            if (!currentForgotPasswordEmail) {
+                showNotification('Please enter email first', 'error');
+                return;
+            }
+            
+            const otp = userManager.generateOTP(currentForgotPasswordEmail);
+            showNotification(`New OTP sent to ${currentForgotPasswordEmail}. Demo OTP: ${otp}`, 'info');
+            startResendTimer();
+        }
+
+        function handleEditUser(event) {
+            const userId = event.currentTarget.getAttribute('data-user-id');
+            const user = userManager.findUserById(userId);
+            
+            if (!user) return;
+            
+            // Populate form
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUserName').value = user.name;
+            document.getElementById('editUserEmail').value = user.email;
+            document.getElementById('editUserRole').value = user.role;
+            
+            // Set avatar preview
+            const preview = document.getElementById('editUserAvatarPreview');
+            if (user.avatar) {
+                preview.style.backgroundImage = `url(${user.avatar})`;
+                preview.innerHTML = `<img src="${user.avatar}" alt="${user.name}"><div class="avatar-change-overlay"><i class="fas fa-camera"></i></div>`;
+            } else {
+                preview.style.backgroundImage = '';
+                preview.innerHTML = `<span id="editUserAvatarInitial">${userManager.getUserInitials(user.name)}</span><div class="avatar-change-overlay"><i class="fas fa-camera"></i></div>`;
+            }
+            
+            openModal(domCache.editUserModal);
+        }
+
+        async function handleEditUserSubmit(event) {
+            event.preventDefault();
+            const userId = document.getElementById('editUserId').value;
+            const name = document.getElementById('editUserName').value.trim();
+            const email = document.getElementById('editUserEmail').value.trim();
+            const role = document.getElementById('editUserRole').value;
+            const newPassword = document.getElementById('editUserPassword').value;
+            const avatarFile = document.getElementById('editUserAvatarInput').files[0];
+            
+            if (!name || !email) {
+                showNotification('Please fill all required fields', 'error');
+                return;
+            }
+            
+            const user = userManager.findUserById(userId);
+            if (!user) {
+                showNotification('User not found', 'error');
+                return;
+            }
+            
+            // Check if email is changed and already exists
+            if (email !== user.email && userManager.findUserByEmail(email)) {
+                showNotification('Email already exists', 'error');
+                return;
+            }
+            
+            let avatarBase64 = user.avatar;
+            if (avatarFile) {
+                try {
+                    avatarBase64 = await userManager.imageToBase64(avatarFile);
+                } catch (error) {
+                    showNotification('Error processing image', 'error');
+                    return;
+                }
+            }
+            
+            const updates = {
+                name,
+                email,
+                role,
+                avatar: avatarBase64
+            };
+            
+            if (newPassword) {
+                if (newPassword.length < 6) {
+                    showNotification('Password must be at least 6 characters', 'error');
+                    return;
+                }
+                updates.password = newPassword;
+            }
+            
+            const success = userManager.updateUser(userId, updates);
+            
+            if (success) {
+                closeModal(domCache.editUserModal);
+                updateUserDisplay();
+                updateUsersList();
+                showNotification('User updated successfully!', 'success');
+            } else {
+                showNotification('Failed to update user', 'error');
+            }
+        }
+
+        function handleDeleteUser(event) {
+            const userId = event.currentTarget.getAttribute('data-user-id');
+            const user = userManager.findUserById(userId);
+            
+            if (!user) return;
+            
+            userToDelete = userId;
+            document.getElementById('deleteConfirmationText').textContent = 
+                `Are you sure you want to delete user "${user.name}" (${user.email})? This action cannot be undone.`;
+            
+            openModal(domCache.deleteConfirmationModal);
+        }
+
+        function handleConfirmDelete() {
+            if (!userToDelete) return;
+            
+            const success = userManager.deleteUser(userToDelete);
+            
+            if (success) {
+                updateUsersList();
+                showNotification('User deleted successfully!', 'success');
+            } else {
+                showNotification('Cannot delete currently logged in user', 'error');
+            }
+            
+            closeModal(domCache.deleteConfirmationModal);
+            userToDelete = null;
+        }
+
+        // OTP input auto-focus
+        function setupOTPInputs() {
+            for (let i = 1; i <= 6; i++) {
+                const input = document.getElementById(`otp${i}`);
+                input.addEventListener('input', function() {
+                    if (this.value.length === 1 && i < 6) {
+                        document.getElementById(`otp${i + 1}`).focus();
+                    }
+                });
+                
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && this.value.length === 0 && i > 1) {
+                        document.getElementById(`otp${i - 1}`).focus();
+                    }
+                });
+            }
+        }
+
+        // Initialize event listeners
+        function initializeEventListeners() {
+            // User profile toggle
+            userManager.addEventListener(domCache.userProfileToggle, 'click', (e) => {
+                e.stopPropagation();
+                domCache.dropdownCompact.classList.toggle('active');
+            });
+            
+            // Close dropdown when clicking outside
+            userManager.addEventListener(document, 'click', () => {
+                domCache.dropdownCompact.classList.remove('active');
+            });
+            
+            // User selection
+            domCache.userOptions.forEach(option => {
+                userManager.addEventListener(option, 'click', handleUserSelection);
+            });
+            
+            // Dropdown menu items
+            userManager.addEventListener(domCache.signInOption, 'click', () => {
+                domCache.dropdownCompact.classList.remove('active');
+                openModal(domCache.signInModal);
+            });
+            
+            userManager.addEventListener(domCache.signUpOption, 'click', () => {
+                domCache.dropdownCompact.classList.remove('active');
+                openModal(domCache.signUpModal);
+            });
+            
+            userManager.addEventListener(domCache.switchUserOption, 'click', () => {
+                domCache.dropdownCompact.classList.remove('active');
+                userManager.signOut();
+                updateUserDisplay();
+            });
+            
+            userManager.addEventListener(domCache.changeAvatarOption, 'click', () => {
+                domCache.dropdownCompact.classList.remove('active');
+                openModal(domCache.changeAvatarModal);
+                resetChangeAvatarPreview();
+            });
+            
+            userManager.addEventListener(domCache.changePasswordOption, 'click', () => {
+                domCache.dropdownCompact.classList.remove('active');
+                openModal(domCache.changePasswordModal);
+            });
+            
+            userManager.addEventListener(domCache.signOutOption, 'click', () => {
+                domCache.dropdownCompact.classList.remove('active');
+                handleSignOut();
+            });
+            
+            // Add user button
+            if (domCache.addUserBtn) {
+                userManager.addEventListener(domCache.addUserBtn, 'click', () => {
+                    domCache.dropdownCompact.classList.remove('active');
+                    openModal(domCache.signUpModal);
+                });
+            }
+            
+            // Modal switches
+            userManager.addEventListener(domCache.switchToSignUp, 'click', (e) => {
+                e.preventDefault();
+                closeModal(domCache.signInModal);
+                openModal(domCache.signUpModal);
+            });
+            
+            userManager.addEventListener(domCache.switchToSignIn, 'click', (e) => {
+                e.preventDefault();
+                closeModal(domCache.signUpModal);
+                openModal(domCache.signInModal);
+            });
+            
+            userManager.addEventListener(domCache.forgotPasswordLink, 'click', (e) => {
+                e.preventDefault();
+                closeModal(domCache.signInModal);
+                openModal(domCache.forgotPasswordModal);
+            });
+            
+            userManager.addEventListener(domCache.backToSignIn, 'click', (e) => {
+                e.preventDefault();
+                closeModal(domCache.forgotPasswordModal);
+                openModal(domCache.signInModal);
+            });
+            
+            userManager.addEventListener(domCache.resendOtpLink, 'click', (e) => {
+                e.preventDefault();
+                handleResendOTP();
+            });
+            
+            // Close modals when clicking outside
+            const modals = [
+                domCache.signInModal, domCache.signUpModal, domCache.forgotPasswordModal,
+                domCache.changePasswordModal, domCache.changeAvatarModal, domCache.editUserModal,
+                domCache.deleteConfirmationModal
+            ];
+            
+            modals.forEach(modal => {
+                userManager.addEventListener(modal, 'click', (e) => {
+                    if (e.target === modal) {
+                        closeModal(modal);
+                    }
+                });
+            });
+            
+            // Form submissions
+            userManager.addEventListener(domCache.signInForm, 'submit', handleSignIn);
+            userManager.addEventListener(domCache.signUpForm, 'submit', handleSignUp);
+            userManager.addEventListener(domCache.changeAvatarForm, 'submit', handleChangeAvatar);
+            userManager.addEventListener(domCache.changePasswordForm, 'submit', handleChangePassword);
+            userManager.addEventListener(domCache.editUserForm, 'submit', handleEditUserSubmit);
+            
+            // Button clicks
+            userManager.addEventListener(domCache.forgotPasswordNextBtn, 'click', handleForgotPasswordNext);
+            userManager.addEventListener(domCache.cancelChangeAvatar, 'click', () => closeModal(domCache.changeAvatarModal));
+            userManager.addEventListener(domCache.cancelEditUser, 'click', () => closeModal(domCache.editUserModal));
+            userManager.addEventListener(domCache.cancelDelete, 'click', () => closeModal(domCache.deleteConfirmationModal));
+            userManager.addEventListener(domCache.confirmDelete, 'click', handleConfirmDelete);
+            
+            // Prevent dropdown from closing when clicking inside
+            userManager.addEventListener(domCache.dropdownCompact, 'click', (e) => {
+                e.stopPropagation();
+            });
+            
+            // Setup avatar uploads
+            setupAvatarUpload('signUpAvatarInput', 'signUpAvatarPreview', 'signUpAvatarInitial');
+            setupAvatarUpload('changeAvatarInput', 'changeAvatarPreview', 'changeAvatarInitial');
+            setupAvatarUpload('editUserAvatarInput', 'editUserAvatarPreview', 'editUserAvatarInitial');
+            
+            // Setup OTP inputs
+            setupOTPInputs();
+            
+            // Handle OTP form submission
+            domCache.forgotPasswordForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleForgotPasswordNext();
+            });
+        }
+
+        function handleSignOut() {
+            userManager.signOut();
+            updateUserDisplay();
+            domCache.dropdownCompact.classList.remove('active');
+            showNotification('Successfully signed out', 'info');
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUserDisplay();
+            initializeEventListeners();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            userManager.cleanup();
+        });
+    </script>
+</body>
+</html>
