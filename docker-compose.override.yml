@@ -1,1 +1,29 @@
-666
+# docker-compose.override.yml
+# Use: docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+
+version: '3.8'
+
+services:
+  rag-chatbot:
+    # Development-specific overrides
+    environment:
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+    # Mount local directory for live code changes
+    volumes:
+      - ./:/app
+    # Development tools
+    ports:
+      - "5678:5678"  # For debugpy
+
+  # Add test database for development
+  test-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=test_db
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test123
+    ports:
+      - "5433:5432"
+    profiles:
+      - testing
